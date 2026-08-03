@@ -51,6 +51,7 @@ parking_lot = "0.12"
 url = "2.5"
 
 [dev-dependencies]
+cargo-husky = { version = "1.5", default-features = false, features = ["user-hooks"] }
 tokio = { version = "1.52", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util", "fs", "test-util"] }
 
 [features]

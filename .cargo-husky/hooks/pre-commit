@@ -1,0 +1,60 @@
+#!/bin/sh
+# Pre-commit hook — checks are scoped to this crate only.
+set -e
+
+echo "🎨 Running pre-commit checks..."
+echo ""
+
+if ! git diff --quiet; then
+    echo "⚠️  Warning: You have unstaged changes. Commit may not include all changes."
+    echo ""
+fi
+
+echo "📝 Checking code formatting..."
+if ! cargo fmt -- --check; then
+    echo ""
+    echo "❌ Code formatting check failed!"
+    echo "   Run 'cargo fmt' to fix formatting issues."
+    echo ""
+    exit 1
+fi
+echo "✅ Code formatting OK"
+echo ""
+
+echo "🔍 Running clippy linter..."
+if ! cargo clippy --all-targets -- -D warnings; then
+    echo ""
+    echo "❌ Clippy check failed!"
+    echo "   Fix the linting issues above before committing."
+    echo ""
+    exit 1
+fi
+echo "✅ Clippy checks passed"
+echo ""
+
+echo "🔎 Checking for common issues..."
+
+git diff --cached --name-only --diff-filter=ACM | while read -r file; do
+    if [ -f "$file" ]; then
+        if grep -n "TODO\|FIXME" "$file" | grep -v "#[0-9]" | grep -v "http" > /dev/null; then
+            echo "⚠️  Found TODO/FIXME without issue reference in: $file"
+        fi
+    fi
+done
+
+git diff --cached --name-only --diff-filter=ACM '*.rs' | while read -r file; do
+    if [ -f "$file" ]; then
+        if grep -n "println!\|dbg!\|eprintln!" "$file" | grep -v "//.*println!" | grep -v "examples/" > /dev/null; then
+            echo "⚠️  Found debug print statement in: $file"
+            echo "   Consider using proper logging instead."
+        fi
+    fi
+done
+
+echo "✅ Code quality checks passed"
+echo ""
+
+echo "✨ Pre-commit checks complete! Ready to commit."
+echo ""
+
+exit 0
