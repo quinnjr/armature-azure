@@ -1,12 +1,12 @@
 [package]
 name = "armature-azure"
 version = "0.2.0"
-edition.workspace = true
-rust-version.workspace = true
-authors.workspace = true
-license.workspace = true
+edition = "2024"
+rust-version = "1.94.1"
+authors = ["Joseph Quinn <quinn.josephr@proton.me>"]
+license = "Apache-2.0"
 repository = "https://github.com/quinnjr/armature-azure"
-homepage.workspace = true
+homepage = "https://quinnjr.github.io/armature"
 description = "Microsoft Azure services integration for Armature - dynamically loadable and DI-ready"
 keywords = ["azure", "cloud", "blob", "cosmos", "servicebus"]
 categories = ["web-programming", "asynchronous"]
