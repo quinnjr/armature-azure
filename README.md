@@ -79,7 +79,8 @@ Bus REST API (`QueueClient`, `TopicClient` / `TopicSender` /
 `SubscriptionReceiver`, peek-lock with complete / abandon / renew), not the legacy
 `azure_messaging_servicebus` SDK, whose `azure_core` 0.21 logs live authorization
 headers at debug/trace level (RUSTSEC-2026-0275). Point
-`ServiceBusClient::with_endpoint` at the Service Bus emulator for local testing.
+`ServiceBusClient::with_endpoint` (https, or http on a loopback host) at the Service Bus
+emulator for local testing.
 
 ## License
 

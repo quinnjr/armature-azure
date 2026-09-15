@@ -32,6 +32,15 @@ pub enum AzureError {
     #[error("Azure service error: {0}")]
     Service(String),
 
+    /// An Azure service answered with an unsuccessful HTTP status.
+    #[error("Azure service error: {message}")]
+    Http {
+        /// HTTP status code.
+        status: u16,
+        /// Description including the method, path and status.
+        message: String,
+    },
+
     /// Network error.
     #[error("Network error: {0}")]
     Network(String),
@@ -54,5 +63,23 @@ impl AzureError {
     /// Create a service not configured error.
     pub fn not_configured(service: &'static str) -> Self {
         Self::ServiceNotConfigured(service)
+    }
+
+    /// The HTTP status of an [`AzureError::Http`] error.
+    pub fn status(&self) -> Option<u16> {
+        match self {
+            Self::Http { status, .. } => Some(*status),
+            _ => None,
+        }
+    }
+
+    /// Whether retrying the operation may succeed: transport failures, request
+    /// timeouts, throttling and server-side errors (408, 429, 500, 502, 503, 504).
+    pub fn is_retryable(&self) -> bool {
+        match self {
+            Self::Network(_) => true,
+            Self::Http { status, .. } => matches!(status, 408 | 429 | 500 | 502 | 503 | 504),
+            _ => false,
+        }
     }
 }
