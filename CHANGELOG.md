@@ -9,6 +9,8 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-15
+
 ### Security
 
 - Settle requests (`delete_message`, `unlock_message`, `renew_message_lock`) only go to a lock location on the entity's own origin and path; a `Location` header pointing anywhere else is refused, so a hostile or misconfigured endpoint cannot collect a SAS token. The HTTP client does not follow redirects.
@@ -28,3 +30,4 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 - Added `PeekLockResponse::has_message`.
 - Peek-lock waits shorter than a second are rounded up to one second instead of being sent as `timeout=0`.
 - The `servicebus` feature's HTTP transport moved from `reqwest` 0.12 to 0.13 (rustls only).
+
