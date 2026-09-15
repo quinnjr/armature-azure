@@ -61,7 +61,11 @@ mod services;
 pub use config::{AzureConfig, AzureConfigBuilder, CredentialsSource};
 pub use error::{AzureError, Result};
 #[cfg(feature = "servicebus")]
-pub use servicebus::{ServiceBusClient, ServiceBusServiceConfig};
+pub use servicebus::{
+    BrokerProperties, PeekLockResponse, QueueClient, SendMessageOptions, ServiceBusClient,
+    ServiceBusServiceConfig, SettableBrokerProperties, SubscriptionReceiver, TopicClient,
+    TopicSender,
+};
 pub use services::AzureServices;
 
 // Re-export Azure SDK types
@@ -79,9 +83,6 @@ pub use azure_storage_queue;
 
 #[cfg(feature = "cosmos")]
 pub use azure_data_cosmos;
-
-#[cfg(feature = "servicebus")]
-pub use azure_messaging_servicebus;
 
 #[cfg(feature = "keyvault")]
 pub use azure_security_keyvault_secrets;
