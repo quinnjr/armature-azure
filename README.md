@@ -53,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let db = services.cosmos_database()?;
     let _container = db.container_client("items");
 
-    // Service Bus: per-entity SAS clients
+    // Service Bus: per-entity clients over the REST API
     let queue = services.servicebus()?.queue("orders")?;
     queue.send_message("hello", None).await?;
 
@@ -74,7 +74,13 @@ connection-string and shared-key auth for these services):
 
 Service Bus authenticates with a Shared Access Signature (SAS), supplied as a
 `servicebus_connection_string` or a `service_config("servicebus")` block with
-`policy_name` + `shared_access_key`.
+`policy_name` + `shared_access_key`. It is implemented directly over the Service
+Bus REST API (`QueueClient`, `TopicClient` / `TopicSender` /
+`SubscriptionReceiver`, peek-lock with complete / abandon / renew), not the legacy
+`azure_messaging_servicebus` SDK, whose `azure_core` 0.21 logs live authorization
+headers at debug/trace level (RUSTSEC-2026-0275). Point
+`ServiceBusClient::with_endpoint` (https, or http on a loopback host) at the Service Bus
+emulator for local testing.
 
 ## License
 

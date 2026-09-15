@@ -269,9 +269,9 @@ impl AzureServices {
             return Ok(());
         }
 
-        // Service Bus (azure_messaging_servicebus 0.21) is SAS-based: it needs a
-        // shared-access policy name + key, resolved from either a connection
-        // string or the per-service `service_config("servicebus")` block.
+        // Service Bus is reached over its REST API with Shared Access Signatures:
+        // it needs a shared-access policy name + key, resolved from either a
+        // connection string or the per-service `service_config("servicebus")` block.
         let sb = if let Some(conn) = &self.config.servicebus_connection_string {
             ServiceBusClient::from_connection_string(conn)?
         } else if let Some(cfg) = self
@@ -292,9 +292,7 @@ impl AzureServices {
         } else {
             return Err(AzureError::Config(
                 "Service Bus requires SAS credentials: set servicebus_connection_string, or a \
-                 service_config(\"servicebus\") with policy_name + shared_access_key. The \
-                 azure_messaging_servicebus 0.21 SDK is SAS-based and has no token-credential \
-                 path."
+                 service_config(\"servicebus\") with policy_name + shared_access_key."
                     .to_string(),
             ));
         };
