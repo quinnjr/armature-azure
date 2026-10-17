@@ -1,0 +1,32 @@
+# Dependabot configuration for this crate's repository.
+
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps(rust)"
+    labels:
+      - "dependencies"
+    # Only patch releases are grouped; minor bumps are reviewed one by one.
+    groups:
+      rust-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+
+  # Keeps the SHA-pinned actions in .github/workflows current.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "deps(actions)"
+    labels:
+      - "dependencies"
