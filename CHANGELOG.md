@@ -9,6 +9,8 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-17
+
 ### Security
 
 - **Breaking:** `AzureConfig`, `CredentialsSource` and `ServiceBusServiceConfig` now have redacting `Debug` impls: `servicebus_connection_string`, the service principal `client_secret` and `shared_access_key` print as `<redacted>`, and `service_configs` values (free-form, may hold secrets) are shown by service name only. `servicebus_connection_string` and `client_secret` are `#[serde(skip_serializing)]` (they still deserialize). `service_configs` values are serialized as given, so do not serialize a config whose `service_configs` holds a SAS key. Migration: re-supply secrets from their source instead of round-tripping a serialized config.
