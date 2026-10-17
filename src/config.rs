@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 /// Credentials source for Azure authentication.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+///
+/// The service principal's `client_secret` is redacted from [`Debug`] and
+/// skipped when serializing (it still deserializes normally).
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CredentialsSource {
     /// Use Default Azure Credential (environment, managed identity, CLI, etc.).
@@ -28,12 +31,39 @@ pub enum CredentialsSource {
     ServicePrincipal {
         tenant_id: String,
         client_id: String,
+        #[serde(skip_serializing)]
         client_secret: String,
     },
 }
 
+impl std::fmt::Debug for CredentialsSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DefaultCredential => f.write_str("DefaultCredential"),
+            Self::Environment => f.write_str("Environment"),
+            Self::ManagedIdentity => f.write_str("ManagedIdentity"),
+            Self::AzureCli => f.write_str("AzureCli"),
+            Self::ServicePrincipal {
+                tenant_id,
+                client_id,
+                client_secret: _,
+            } => f
+                .debug_struct("ServicePrincipal")
+                .field("tenant_id", tenant_id)
+                .field("client_id", client_id)
+                .field("client_secret", &"<redacted>")
+                .finish(),
+        }
+    }
+}
+
 /// Azure service configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `servicebus_connection_string` (it embeds the `SharedAccessKey`) is
+/// redacted from [`Debug`] and skipped when serializing. The values of
+/// `service_configs` are free-form and may carry secrets (e.g. the Service
+/// Bus `shared_access_key`), so `Debug` prints only their service names.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AzureConfig {
     /// Storage account name.
     pub storage_account: Option<String>,
@@ -45,7 +75,7 @@ pub struct AzureConfig {
     pub servicebus_namespace: Option<String>,
     /// Service Bus connection string (SAS). Carries the namespace + shared
     /// access policy the SAS-based Service Bus SDK requires.
-    #[serde(default)]
+    #[serde(default, skip_serializing)]
     pub servicebus_connection_string: Option<String>,
     /// Key Vault URL.
     pub keyvault_url: Option<String>,
@@ -60,6 +90,34 @@ pub struct AzureConfig {
     pub service_configs: std::collections::HashMap<String, serde_json::Value>,
     /// Use Azurite emulator (for local development).
     pub use_emulator: bool,
+}
+
+impl std::fmt::Debug for AzureConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let service_configs: std::collections::BTreeMap<&str, &str> = self
+            .service_configs
+            .keys()
+            .map(|k| (k.as_str(), "<redacted>"))
+            .collect();
+        f.debug_struct("AzureConfig")
+            .field("storage_account", &self.storage_account)
+            .field("cosmos_endpoint", &self.cosmos_endpoint)
+            .field("cosmos_database", &self.cosmos_database)
+            .field("servicebus_namespace", &self.servicebus_namespace)
+            .field(
+                "servicebus_connection_string",
+                &self
+                    .servicebus_connection_string
+                    .as_ref()
+                    .map(|_| "<redacted>"),
+            )
+            .field("keyvault_url", &self.keyvault_url)
+            .field("credentials", &self.credentials)
+            .field("enabled_services", &self.enabled_services)
+            .field("service_configs", &service_configs)
+            .field("use_emulator", &self.use_emulator)
+            .finish()
+    }
 }
 
 impl Default for AzureConfig {
@@ -261,5 +319,41 @@ impl AzureConfigBuilder {
     /// Build the configuration.
     pub fn build(self) -> AzureConfig {
         self.config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn debug_and_serialize_redact_secrets() {
+        let mut config = AzureConfig::builder()
+            .servicebus_connection_string(
+                "Endpoint=sb://ns.servicebus.windows.net/;SharedAccessKeyName=p;SharedAccessKey=conn-secret",
+            )
+            .build();
+        config.credentials = CredentialsSource::ServicePrincipal {
+            tenant_id: "tenant".into(),
+            client_id: "client".into(),
+            client_secret: "sp-secret".into(),
+        };
+        config.service_configs.insert(
+            "servicebus".into(),
+            serde_json::json!({ "policy_name": "p", "shared_access_key": "svc-secret" }),
+        );
+
+        let debug = format!("{config:?}");
+        for secret in ["conn-secret", "sp-secret", "svc-secret"] {
+            assert!(!debug.contains(secret), "{secret} leaked: {debug}");
+        }
+        assert!(debug.contains("tenant") && debug.contains("servicebus"));
+
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(
+            !json.contains("conn-secret"),
+            "connection string serialized"
+        );
+        assert!(!json.contains("sp-secret"), "client secret serialized");
     }
 }

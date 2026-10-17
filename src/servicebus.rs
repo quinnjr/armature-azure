@@ -42,7 +42,9 @@ const ERROR_BODY_LIMIT: usize = 512;
 /// Per-service configuration for Service Bus, read from
 /// `AzureConfig::service_config("servicebus")` when no
 /// `servicebus_connection_string` is set.
-#[derive(Debug, Clone, Deserialize)]
+///
+/// `shared_access_key` is redacted from the `Debug` output.
+#[derive(Clone, Deserialize)]
 pub struct ServiceBusServiceConfig {
     /// Service Bus namespace (falls back to `AzureConfig::servicebus_namespace`).
     #[serde(default)]
@@ -51,6 +53,16 @@ pub struct ServiceBusServiceConfig {
     pub policy_name: String,
     /// Shared Access Signature key.
     pub shared_access_key: String,
+}
+
+impl std::fmt::Debug for ServiceBusServiceConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ServiceBusServiceConfig")
+            .field("namespace", &self.namespace)
+            .field("policy_name", &self.policy_name)
+            .field("shared_access_key", &"<redacted>")
+            .finish()
+    }
 }
 
 /// Namespace-scoped Azure Service Bus client.
@@ -1019,6 +1031,19 @@ fn deserialize_http_date<'de, D: Deserializer<'de>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn service_config_debug_redacts_shared_access_key() {
+        let cfg: ServiceBusServiceConfig = serde_json::from_value(serde_json::json!({
+            "namespace": "ns",
+            "policy_name": "RootManageSharedAccessKey",
+            "shared_access_key": "sas-key-secret"
+        }))
+        .unwrap();
+        let debug = format!("{cfg:?}");
+        assert!(!debug.contains("sas-key-secret"), "key leaked: {debug}");
+        assert!(debug.contains("RootManageSharedAccessKey"));
+    }
     use wiremock::matchers::{body_string, header, header_exists, method, path, query_param};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
