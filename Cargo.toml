@@ -45,7 +45,7 @@ thiserror = "2.0"
 
 # Utilities
 tracing = "0.1"
-parking_lot = "0.12"
+parking_lot = "0.13"
 url = "2.5"
 
 [dev-dependencies]
